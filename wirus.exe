@@ -1,16 +1,108 @@
 import pygame
+import math
+import random
 
 pygame.init()
 screen = pygame.display.set_mode((800, 500))
 
+class Player:
+    def __init__(self, Angle):
+        self.Angle = Angle
+        self.Shoot = False
+        self.Image = pygame.image.load("OIP.jpg")
+
+    def draw(self):
+        scaledImage = pygame.transform.scale(self.Image, (100, 100))
+        rotatedImage = pygame.transform.rotate(scaledImage, self.Angle)
+        rect = rotatedImage.get_rect(center = (400, 250))
+        screen.blit(rotatedImage, rect)
+
+    def turn(self):
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+
+        dx = mouse_x - 400
+        dy = mouse_y - 250
+
+        self.Angle = -math.degrees(math.atan2(dy, dx)) - 90
+    
+player = Player(0)
+
+class Bullet:
+    def __init__(self, rect):
+        self.rect = rect
+        self.x = 400
+        self.y = 250
+        self.angle = math.radians(player.Angle + 90)
+        self.speed = 7
+        self.Image = pygame.image.load("OIP.jpg")
+
+    def update(self):
+        self.x += math.cos(self.angle) * self.speed
+        self.y -= math.sin(self.angle) * self.speed
+        
+    def draw(self):
+        scaledImage = pygame.transform.scale(self.Image, (20, 20))
+        rotatedImage = pygame.transform.rotate(scaledImage, self.angle)
+        self.rect = rotatedImage.get_rect(center = (self.x, self.y))
+        screen.blit(rotatedImage, self.rect)
+
+class Zombie:
+    def __init__(self, rect):
+        self.X = random.randint(100, 700)
+        self.Y = 100
+        self.image = pygame.transform.scale(pygame.image.load("OIP.jpg"), (100, 100))
+        self.rect = rect
+
+    def draw(self):
+        self.rect = self.image.get_rect(center = (self.X, self.Y))
+        screen.blit(self.image, self.rect)
+
 running = True
+
+clock = pygame.time.Clock()
+bullets = []
+zombies = []
+running = True
+lastZombieTime = pygame.time.get_ticks()
 
 while running:
     screen.fill((255, 255, 255))
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            bullets.append(Bullet(0))
+    
+    currentTime = pygame.time.get_ticks()
+
+    if currentTime - lastZombieTime >= 3000:
+        zombies.append(Zombie(None))
+        lastZombieTime = currentTime
+
+    player.turn()
+    player.draw()
+
+    for zombie in zombies[:]:
+        zombie.draw()
+
+    for bullet in bullets[:]:
+        bullet.update()
+        bullet.draw()
+        for zombie in zombies[:]:
+            if zombie.rect.colliderect(bullet.rect):
+                zombies.remove(zombie)
+                bullets.remove(bullet)
+
+        if (bullet.x < 0 or bullet.x > 800 or
+                bullet.y < 0 or bullet.y > 500):
+            bullets.remove(bullet)
+
+    if len(zombies) > 3:
+        running = False
+    
     pygame.display.flip()
+    clock.tick(120)
 
 pygame.quit()
