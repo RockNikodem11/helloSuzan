@@ -14,14 +14,14 @@ class Player:
     def draw(self):
         scaledImage = pygame.transform.scale(self.Image, (100, 100))
         rotatedImage = pygame.transform.rotate(scaledImage, self.Angle)
-        rect = rotatedImage.get_rect(center = (400, 250))
+        rect = rotatedImage.get_rect(center = (400, 400))
         screen.blit(rotatedImage, rect)
 
     def turn(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         dx = mouse_x - 400
-        dy = mouse_y - 250
+        dy = mouse_y - 400
 
         self.Angle = -math.degrees(math.atan2(dy, dx)) - 90
     
@@ -31,7 +31,7 @@ class Bullet:
     def __init__(self, rect):
         self.rect = rect
         self.x = 400
-        self.y = 250
+        self.y = 400
         self.angle = math.radians(player.Angle + 90)
         self.speed = 7
         self.Image = pygame.image.load("OIP.jpg")
@@ -64,6 +64,8 @@ bullets = []
 zombies = []
 running = True
 lastZombieTime = pygame.time.get_ticks()
+font = pygame.font.SysFont("Comic Sans MS", 30)
+licznikZombie = 0
 
 while running:
     screen.fill((255, 255, 255))
@@ -77,7 +79,7 @@ while running:
     
     currentTime = pygame.time.get_ticks()
 
-    if currentTime - lastZombieTime >= 3000:
+    if currentTime - lastZombieTime >= 500:
         zombies.append(Zombie(None))
         lastZombieTime = currentTime
 
@@ -94,6 +96,8 @@ while running:
             if zombie.rect.colliderect(bullet.rect):
                 zombies.remove(zombie)
                 bullets.remove(bullet)
+                licznikZombie += 1
+                break
 
         if (bullet.x < 0 or bullet.x > 800 or
                 bullet.y < 0 or bullet.y > 500):
@@ -101,6 +105,9 @@ while running:
 
     if len(zombies) > 3:
         running = False
+
+    label = font.render(str(licznikZombie), True, (0, 0, 0))
+    screen.blit(label, (10, 10))
     
     pygame.display.flip()
     clock.tick(120)
