@@ -3,37 +3,38 @@ import math
 import random
 
 pygame.init()
-screen = pygame.display.set_mode((800, 500))
+screen = pygame.display.set_mode((800, 500), pygame.SCALED | pygame.RESIZABLE)
 
 class Player:
-    def __init__(self, Angle):
+    def __init__(self, Angle, rect):
         self.Angle = Angle
         self.Shoot = False
         self.Image = pygame.image.load("OIP.jpg")
+        self.rect = rect
 
     def draw(self):
         scaledImage = pygame.transform.scale(self.Image, (100, 100))
         rotatedImage = pygame.transform.rotate(scaledImage, self.Angle)
-        rect = rotatedImage.get_rect(center = (400, 400))
-        screen.blit(rotatedImage, rect)
+        self.rect = rotatedImage.get_rect(center = (400, 250))
+        screen.blit(rotatedImage, self.rect)
 
     def turn(self):
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         dx = mouse_x - 400
-        dy = mouse_y - 400
+        dy = mouse_y - 250
 
         self.Angle = -math.degrees(math.atan2(dy, dx)) - 90
     
-player = Player(0)
+player = Player(0, None)
 
 class Bullet:
     def __init__(self, rect):
         self.rect = rect
         self.x = 400
-        self.y = 400
+        self.y = 250
         self.angle = math.radians(player.Angle + 90)
-        self.speed = 7
+        self.speed = 14
         self.Image = pygame.image.load("OIP.jpg")
 
     def update(self):
@@ -54,18 +55,40 @@ class Zombie:
         self.rect = rect
 
     def draw(self):
-        self.rect = self.image.get_rect(center = (self.X, self.Y))
+        self.rect = self.image.get_rect(center = (self.X + position[0], self.Y + position[1]))
         screen.blit(self.image, self.rect)
+
+class House:
+    def __init__(self, rect):
+        self.X = random.randint(-3000, 3800)
+        self.Y = random.randint(-1500, 2000)
+        self.rect = rect
+        self.image = pygame.image.load("house.png")
+        self.Angle = random.randint(1, 360)
+
+    def draw(self):
+        scaledImage = pygame.transform.scale(self.image, (400, 200))
+        rotatedImage = pygame.transform.rotate(scaledImage, self.Angle)
+        self.rect = rotatedImage.get_rect(center = (self.X + position[0], self.Y + position[1]))
+        screen.blit(rotatedImage, self.rect)
+
 
 running = True
 
 clock = pygame.time.Clock()
 bullets = []
 zombies = []
+houses = []
 running = True
 lastZombieTime = pygame.time.get_ticks()
 font = pygame.font.SysFont("Comic Sans MS", 30)
 licznikZombie = 0
+timer = 1500
+position = [0, 0]
+speed = 6
+
+for i in range(30):
+    houses.append(House(None))
 
 while running:
     screen.fill((255, 255, 255))
@@ -76,19 +99,45 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             bullets.append(Bullet(0))
+
+    keys = pygame.key.get_pressed()
+
+    if keys[pygame.K_w]:
+        mouseX , mouseY = pygame.mouse.get_pos()
+        angle = math.radians(player.Angle + 90)
+
+        position[0] -= math.cos(angle) * speed
+        position[1] += math.sin(angle) * speed
+
+    if keys[pygame.K_s]:
+        mouseX , mouseY = pygame.mouse.get_pos()
+        angle = math.radians(player.Angle + 90)
+
+        position[0] += math.cos(angle) * speed
+        position[1] -= math.sin(angle) * speed
     
     currentTime = pygame.time.get_ticks()
 
-    if currentTime - lastZombieTime >= 500:
+    if currentTime - lastZombieTime >= timer:
         zombies.append(Zombie(None))
         lastZombieTime = currentTime
+        timer -= 10
 
-    player.turn()
-    player.draw()
+    
 
     for zombie in zombies[:]:
         zombie.draw()
 
+    player.turn()
+    player.draw()
+    
+    for house in houses[:]:
+        house.draw()
+        if house.rect.colliderect(player.rect):
+            print("Hello World")
+
+    player.draw()
+    
     for bullet in bullets[:]:
         bullet.update()
         bullet.draw()
@@ -98,10 +147,11 @@ while running:
                 bullets.remove(bullet)
                 licznikZombie += 1
                 break
-
         if (bullet.x < 0 or bullet.x > 800 or
                 bullet.y < 0 or bullet.y > 500):
             bullets.remove(bullet)
+    
+    
 
     if len(zombies) > 3:
         running = False
@@ -110,6 +160,6 @@ while running:
     screen.blit(label, (10, 10))
     
     pygame.display.flip()
-    clock.tick(120)
+    clock.tick(60)
 
 pygame.quit()
